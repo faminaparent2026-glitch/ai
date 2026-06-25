@@ -1,6 +1,7 @@
 import os
 import subprocess
 import sys
+import logging
 from flask import Flask, render_template_string, request
 
 # --- المرحلة 1: تثبيت الأدوات ---
@@ -14,10 +15,12 @@ def install_requirements():
 
 install_requirements()
 
-# --- المرحلة 2: واجهة المستخدم (AI Interface) ---
+# --- المرحلة 5: إعداد نظام السجلات ---
+logging.basicConfig(filename='ai_system.log', level=logging.INFO, format='%(asctime)s - %(message)s')
+
+# --- المرحلة 2: واجهة المستخدم ---
 app = Flask(__name__)
 
-# الواجهة المربعة التي طلبتها
 HTML_UI = """
 <!DOCTYPE html>
 <html lang="ar">
@@ -61,30 +64,27 @@ HTML_UI = """
 def home():
     return render_template_string(HTML_UI)
 
+# --- المرحلة 3, 4, 5: معالجة الأوامر والسجلات ---
 @app.route('/process')
 def process():
-    cmd = request.args.get('cmd')
-    # هنا سيتم دمج منطق "المخطط" (Planner) لاحقاً
-    return f"تم استلام أمرك: {cmd}. جاري المعالجة (المرحلة 2 مفعلة)."
+    cmd = request.args.get('cmd', '').lower()
+    logging.info(f"User command: {cmd}")
+    
+    if cmd == "status":
+        return "النظام يعمل بكفاءة. أنا في المرحلة 5."
+    elif cmd == "help":
+        return "الأوامر المتاحة: status, help, list, logs"
+    elif cmd == "list":
+        return "الملفات: " + ", ".join(os.listdir('.'))
+    elif cmd == "logs":
+        if os.path.exists('ai_system.log'):
+            with open('ai_system.log', 'r') as f:
+                return "<br>".join(f.read().splitlines()[-5:])
+        return "لا توجد سجلات بعد."
+    else:
+        return f"الوكيل: لم أفهم '{cmd}'."
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port)
-
-# استبدل دالة process في ملفك بهذا الكود:
-
-@app.route('/process')
-def process():
-    cmd = request.args.get('cmd', '').lower()
-    
-    # نظام أوامر بسيط (المرحلة 3)
-    if cmd == "status":
-        return "النظام يعمل بكفاءة. أنا الآن في المرحلة 3 من 100."
-    elif cmd == "help":
-        return "الأوامر المتاحة: status, help, list"
-    elif cmd == "list":
-        files = os.listdir('.')
-        return "الملفات في السيرفر: " + ", ".join(files)
-    else:
-        return f"الوكيل: لم أفهم الأمر '{cmd}'. جرب كتابة 'help'."
 
