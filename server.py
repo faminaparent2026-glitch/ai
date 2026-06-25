@@ -71,3 +71,20 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port)
 
+# استبدل دالة process في ملفك بهذا الكود:
+
+@app.route('/process')
+def process():
+    cmd = request.args.get('cmd', '').lower()
+    
+    # نظام أوامر بسيط (المرحلة 3)
+    if cmd == "status":
+        return "النظام يعمل بكفاءة. أنا الآن في المرحلة 3 من 100."
+    elif cmd == "help":
+        return "الأوامر المتاحة: status, help, list"
+    elif cmd == "list":
+        files = os.listdir('.')
+        return "الملفات في السيرفر: " + ", ".join(files)
+    else:
+        return f"الوكيل: لم أفهم الأمر '{cmd}'. جرب كتابة 'help'."
+
