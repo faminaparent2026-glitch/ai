@@ -1,0 +1,5 @@
+[user]
+	email = you@example.com
+	name = Your Name
+[alias]
+	up = !git add . && git commit -m \"auto-update\" && git push -u origin main

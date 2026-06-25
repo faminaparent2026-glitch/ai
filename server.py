@@ -1,8 +1,9 @@
 import os
 import subprocess
 import sys
+from flask import Flask, render_template_string, request
 
-# --- Automatic Installation Phase ---
+# --- المرحلة 1: تثبيت الأدوات ---
 def install_requirements():
     required = ['flask']
     for package in required:
@@ -13,22 +14,58 @@ def install_requirements():
 
 install_requirements()
 
-# --- Server Phase ---
-from flask import Flask
+# --- المرحلة 2: واجهة المستخدم (AI Interface) ---
 app = Flask(__name__)
+
+# الواجهة المربعة التي طلبتها
+HTML_UI = """
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { background-color: #121212; color: #fff; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        #app-box { width: 400px; height: 500px; border: 2px solid #333; border-radius: 15px; display: flex; flex-direction: column; background: #1e1e1e; overflow: hidden; }
+        #chat-area { flex: 1; padding: 20px; overflow-y: auto; border-bottom: 1px solid #333; }
+        #input-area { padding: 10px; display: flex; }
+        input { flex: 1; background: #333; border: none; color: white; padding: 10px; border-radius: 5px; }
+        button { background: #4caf50; border: none; color: white; padding: 10px; margin-left: 5px; border-radius: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div id="app-box">
+        <div id="chat-area"><p>مرحباً، أنا نظامك الذكي B.H. كيف يمكنني مساعدتك؟</p></div>
+        <div id="input-area">
+            <input type="text" id="user-input" placeholder="اكتب أمرك هنا...">
+            <button onclick="sendMessage()">إرسال</button>
+        </div>
+    </div>
+    <script>
+        function sendMessage() {
+            let input = document.getElementById('user-input');
+            let chat = document.getElementById('chat-area');
+            chat.innerHTML += '<p style="text-align:right;">أنت: ' + input.value + '</p>';
+            fetch('/process?cmd=' + input.value)
+                .then(res => res.text())
+                .then(data => {
+                    chat.innerHTML += '<p>الوكيل: ' + data + '</p>';
+                    input.value = '';
+                });
+        }
+    </script>
+</body>
+</html>
+"""
 
 @app.route('/')
 def home():
-    return "The server is running from a single file, and all tools are installed!"
+    return render_template_string(HTML_UI)
 
-@app.route('/read-code')
-def read_code():
-    try:
-        with open('server.py', 'r') as file:
-            code = file.read()
-        return f"<pre>{code}</pre>"
-    except Exception as e:
-        return str(e)
+@app.route('/process')
+def process():
+    cmd = request.args.get('cmd')
+    # هنا سيتم دمج منطق "المخطط" (Planner) لاحقاً
+    return f"تم استلام أمرك: {cmd}. جاري المعالجة (المرحلة 2 مفعلة)."
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
