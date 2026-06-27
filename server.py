@@ -1,9 +1,9 @@
-from flask import Flask, request, jsonify
+import os
 import re
 import json
 import hashlib
 from datetime import datetime
-import os
+from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
@@ -17,12 +17,22 @@ class BHAgent:
         self.personality_config = {'mode': 'professional', 'tone': 'formal'}
         self.security_context = {'authenticated': False, 'session_id': None}
         
-    def layer_1_input(self, raw_input): return raw_input.strip()
+    def layer_1_input(self, raw_input):
+        return raw_input.strip()
+    
     def layer_2_clean_text(self, text):
         text = re.sub(r'\s+', ' ', text)
-        return re.sub(r'[^\w\s\u0600-\u06FF]', '', text).strip()
-    def layer_3_detect_language(self, text): return 'ar' if re.search(r'[أ-ي]', text) else 'en'
-    def layer_4_tokenize(self, text): return text.split()
+        text = re.sub(r'[^\w\s\u0600-\u06FF]', '', text)
+        return text.strip()
+    
+    def layer_3_detect_language(self, text):
+        if re.search(r'[أ-ي]', text):
+            return 'ar'
+        return 'en'
+    
+    def layer_4_tokenize(self, text):
+        return text.split()
+    
     def layer_5_understand_intent(self, tokens):
         intent_keywords = {
             'search': ['بحث', 'find', 'search', 'ابحث'],
@@ -33,45 +43,204 @@ class BHAgent:
         }
         text = ' '.join(tokens).lower()
         for intent, keywords in intent_keywords.items():
-            if any(kw in text for kw in keywords): return intent
+            if any(kw in text for kw in keywords):
+                return intent
         return 'general'
     
-    def layer_6_extract_info(self, tokens, intent): return {'tokens': tokens, 'intent': intent, 'entities': [], 'timestamp': datetime.now().isoformat()}
-    def layer_7_analyze_context(self, info): return {'context': 'user_query', 'session_id': self.security_context.get('session_id'), 'info': info}
+    def layer_6_extract_info(self, tokens, intent):
+        return {
+            'tokens': tokens,
+            'intent': intent,
+            'entities': [],
+            'timestamp': datetime.now().isoformat()
+        }
+    
+    def layer_7_analyze_context(self, info):
+        return {
+            'context': 'user_query',
+            'session_id': self.security_context.get('session_id'),
+            'info': info
+        }
+    
     def layer_8_short_memory(self, context):
         self.memory_short.append(context)
-        if len(self.memory_short) > 10: self.memory_short.pop(0)
+        if len(self.memory_short) > 10:
+            self.memory_short.pop(0)
         return context
+    
     def layer_9_long_memory(self, context):
         key = hashlib.md5(str(context).encode()).hexdigest()[:8]
-        self.memory_long[key] = {'timestamp': datetime.now().isoformat(), 'data': context}
+        self.memory_long[key] = {
+            'timestamp': datetime.now().isoformat(),
+            'data': context
+        }
         return context
+    
     def layer_10_retrieve_memories(self, context):
-        context['related_memories'] = list(self.memory_long.values())[-5:]
+        related = []
+        for key, value in list(self.memory_long.items())[-5:]:
+            related.append(value)
+        context['related_memories'] = related
         return context
-    def layer_11_planning(self, context): return {'plan': {'action': context['info']['intent'], 'steps': ['analyze', 'process', 'respond'], 'priority': 1}, 'context': context}
-    def layer_12_reasoning(self, plan_data): return {'reasoning': {'analysis': f'Processing {plan_data["context"]["info"]["intent"]} query', 'confidence': 0.85, 'context': plan_data['context']}, 'plan': plan_data['plan']}
-    def layer_13_decision_making(self, reasoning_data): return {'decision': {'action': 'proceed', 'reasoning': reasoning_data['reasoning'], 'requires_tools': False}, 'reasoning': reasoning_data}
-    def layer_14_prioritize(self, decision_data): return {'priority': {'level': 1, 'urgent': False, 'decision': decision_data['decision']}, 'decision': decision_data}
-    def layer_15_knowledge_base(self, priority_data): return {'knowledge': {'facts': [], 'rules': ['process_queries'], 'priority': priority_data['priority']}, 'priority': priority_data}
-    def layer_16_search(self, knowledge_data): return {'search_results': {'results': [], 'query': 'default', 'knowledge': knowledge_data['knowledge']}, 'knowledge': knowledge_data}
-    def layer_17_run_tools(self, search_data): return {'tools': {'tools_used': ['parser', 'validator'], 'search': search_data['search_results']}, 'search': search_data}
-    def layer_18_execute_code(self, tools_data): return {'execution': {'status': 'success', 'output': 'Processed', 'tools': tools_data['tools']}, 'tools': tools_data}
-    def layer_19_check_results(self, execution_data): return {'validated': {'validated': True, 'errors': [], 'execution': execution_data['execution']}, 'execution': execution_data}
-    def layer_20_debug(self, validated_data): return {'debugged': {'debugged': True, 'logs': ['No errors found'], 'results': validated_data['validated']}, 'validated': validated_data}
-    def layer_21_learn(self, debugged_data): return {'learned': {'learned': True, 'new_patterns': [], 'debugged': debugged_data['debugged']}, 'debugged': debugged_data}
-    def layer_22_evaluate_performance(self, learned_data): return {'evaluation': {'performance': 'optimal', 'metrics': {'speed': 'fast', 'accuracy': 'high'}, 'learned': learned_data['learned']}, 'learned': learned_data}
-    def layer_23_improve_response(self, evaluation_data): return {'improved': {'improved': True, 'enhancements': ['clarity', 'relevance'], 'evaluation': evaluation_data['evaluation']}, 'evaluation': evaluation_data}
-    def layer_24_format_text(self, improved_data): return {'formatted': {'formatted': 'response_ready', 'style': 'clear', 'improved': improved_data['improved']}, 'improved': improved_data}
-    def layer_25_manage_personalities(self, formatted_data): return {'personality': {'personality': self.personality_config, 'tone': 'professional', 'formatted': formatted_data['formatted']}, 'formatted': formatted_data}
-    def layer_26_manage_projects(self, personality_data): return {'project': {'project_data': self.project_data, 'active': True, 'personality': personality_data['personality']}, 'personality': personality_data}
+    
+    def layer_11_planning(self, context):
+        intent = context['info']['intent']
+        plan = {
+            'action': intent,
+            'steps': ['analyze', 'process', 'respond'],
+            'priority': 1
+        }
+        return {'plan': plan, 'context': context}
+    
+    def layer_12_reasoning(self, plan_data):
+        context = plan_data['context']
+        intent = context['info']['intent']
+        reasoning = {
+            'analysis': f'Processing {intent} query',
+            'confidence': 0.85,
+            'context': context
+        }
+        return {'reasoning': reasoning, 'plan': plan_data['plan']}
+    
+    def layer_13_decision_making(self, reasoning_data):
+        decision = {
+            'action': 'proceed',
+            'reasoning': reasoning_data['reasoning'],
+            'requires_tools': False
+        }
+        return {'decision': decision, 'reasoning': reasoning_data}
+    
+    def layer_14_prioritize(self, decision_data):
+        priority = {
+            'level': 1,
+            'urgent': False,
+            'decision': decision_data['decision']
+        }
+        return {'priority': priority, 'decision': decision_data}
+    
+    def layer_15_knowledge_base(self, priority_data):
+        knowledge = {
+            'facts': [],
+            'rules': ['process_queries'],
+            'priority': priority_data['priority']
+        }
+        return {'knowledge': knowledge, 'priority': priority_data}
+    
+    def layer_16_search(self, knowledge_data):
+        search_results = {
+            'results': [],
+            'query': 'default',
+            'knowledge': knowledge_data['knowledge']
+        }
+        return {'search_results': search_results, 'knowledge': knowledge_data}
+    
+    def layer_17_run_tools(self, search_data):
+        tools = {
+            'tools_used': ['parser', 'validator'],
+            'search': search_data['search_results']
+        }
+        return {'tools': tools, 'search': search_data}
+    
+    def layer_18_execute_code(self, tools_data):
+        execution = {
+            'status': 'success',
+            'output': 'Processed',
+            'tools': tools_data['tools']
+        }
+        return {'execution': execution, 'tools': tools_data}
+    
+    def layer_19_check_results(self, execution_data):
+        validation = {
+            'validated': True,
+            'errors': [],
+            'execution': execution_data['execution']
+        }
+        return {'validated': validation, 'execution': execution_data}
+    
+    def layer_20_debug(self, validated_data):
+        debug = {
+            'debugged': True,
+            'logs': ['No errors found'],
+            'results': validated_data['validated']
+        }
+        return {'debugged': debug, 'validated': validated_data}
+    
+    def layer_21_learn(self, debugged_data):
+        learned = {
+            'learned': True,
+            'new_patterns': [],
+            'debugged': debugged_data['debugged']
+        }
+        return {'learned': learned, 'debugged': debugged_data}
+    
+    def layer_22_evaluate_performance(self, learned_data):
+        evaluation = {
+            'performance': 'optimal',
+            'metrics': {'speed': 'fast', 'accuracy': 'high'},
+            'learned': learned_data['learned']
+        }
+        return {'evaluation': evaluation, 'learned': learned_data}
+    
+    def layer_23_improve_response(self, evaluation_data):
+        improved = {
+            'improved': True,
+            'enhancements': ['clarity', 'relevance'],
+            'evaluation': evaluation_data['evaluation']
+        }
+        return {'improved': improved, 'evaluation': evaluation_data}
+    
+    def layer_24_format_text(self, improved_data):
+        formatted = {
+            'formatted': 'response_ready',
+            'style': 'clear',
+            'improved': improved_data['improved']
+        }
+        return {'formatted': formatted, 'improved': improved_data}
+    
+    def layer_25_manage_personalities(self, formatted_data):
+        personality = {
+            'personality': self.personality_config,
+            'tone': 'professional',
+            'formatted': formatted_data['formatted']
+        }
+        return {'personality': personality, 'formatted': formatted_data}
+    
+    def layer_26_manage_projects(self, personality_data):
+        project = {
+            'project_data': self.project_data,
+            'active': True,
+            'personality': personality_data['personality']
+        }
+        return {'project': project, 'personality': personality_data}
+    
     def layer_27_save_log(self, project_data):
-        self.session_log.append({'timestamp': datetime.now().isoformat(), 'data': project_data['project']})
-        return {'logged': True, 'project': project_data}
-    def layer_28_security(self, logged_data): return {'security': {'secured': True, 'checks_passed': ['input_validation', 'output_sanitization'], 'logged': logged_data['logged']}, 'logged': logged_data}
-    def layer_29_prepare_response(self, security_data): return {'response_data': {'response': 'Request processed successfully', 'status': 'completed', 'security': security_data['security']}, 'security': security_data}
-    def layer_30_final_output(self, prepared_data): return prepared_data['response_data']['response']
-
+        log_entry = {
+            'timestamp': datetime.now().isoformat(),
+            'data': project_data['project'],
+            'session': self.security_context
+        }
+        self.session_log.append(log_entry)
+        return {'logged': True, 'log_entry': log_entry, 'project': project_data}
+    
+    def layer_28_security(self, logged_data):
+        security = {
+            'secured': True,
+            'checks_passed': ['input_validation', 'output_sanitization'],
+            'logged': logged_data['logged']
+        }
+        return {'security': security, 'logged': logged_data}
+    
+    def layer_29_prepare_response(self, security_data):
+        response = {
+            'response': 'Request processed successfully',
+            'status': 'completed',
+            'security': security_data['security']
+        }
+        return {'response_data': response, 'security': security_data}
+    
+    def layer_30_final_output(self, prepared_data):
+        return prepared_data['response_data']['response']
+    
     def process_query(self, query):
         data = self.layer_1_input(query)
         data = self.layer_2_clean_text(data)
@@ -108,17 +277,51 @@ agent = BHAgent()
 
 @app.route('/')
 def home():
-    return jsonify({"status": "online", "message": "B.H Agent is active"})
+    return jsonify({
+        'message': 'Welcome to B.H Agent System',
+        'status': 'active',
+        'version': '1.0.0',
+        'architecture': '30-layer pipeline',
+        'endpoints': {
+            '/process': 'POST - Process queries',
+            '/': 'GET - Welcome message',
+            '/health': 'GET - System health check'
+        }
+    })
 
 @app.route('/process', methods=['POST'])
 def process():
     try:
         data = request.json
-        if not data or 'query' not in data: return jsonify({'error': 'Missing query'}), 400
-        return jsonify({'status': 'success', 'response': agent.process_query(data['query'])})
-    except Exception as e: return jsonify({'status': 'error', 'error': str(e)}), 500
+        if not data or 'query' not in data:
+            return jsonify({'error': 'Missing query parameter'}), 400
+        
+        query = data.get('query', '')
+        if not query.strip():
+            return jsonify({'error': 'Empty query'}), 400
+        
+        response = agent.process_query(query)
+        
+        return jsonify({
+            'status': 'success',
+            'response': response,
+            'timestamp': datetime.now().isoformat()
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'error': str(e)
+        }), 500
+
+@app.route('/health', methods=['GET'])
+def health():
+    return jsonify({
+        'status': 'healthy',
+        'memory_short_size': len(agent.memory_short),
+        'memory_long_size': len(agent.memory_long),
+        'session_log_size': len(agent.session_log)
+    })
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
-
