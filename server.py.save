@@ -154,6 +154,11 @@ class BHAgent:
     def layer_19_check_results(self, execution_data):
         validation = {
             'validated': True,
+from flask import Flask, render_template, request, jsonify # تأكد من إضافة render_template هنا
+
+@app.route('/')
+def home():
+    return render_template('index.html') # هذا هو السطر الذي يربط الملفين ببعض
             'errors': [],
             'execution': execution_data['execution']
         }
@@ -357,9 +362,3 @@ def debug():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
-from flask import Flask, render_template, request, jsonify # تأكد من إضافة render_template هنا
-
-@app.route('/')
-def home():
-    return render_template('index.html') # هذا هو السطر الذي يربط الملفين ببعض
-
