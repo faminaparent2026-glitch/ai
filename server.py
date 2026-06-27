@@ -16,6 +16,7 @@ class BHAgent:
         self.session_log = []
         self.personality_config = {'mode': 'professional', 'tone': 'formal'}
         self.security_context = {'authenticated': False, 'session_id': None}
+        self.execution_engine = {'status': 'idle', 'last_run': None}
         
     def layer_1_input(self, raw_input):
         return raw_input.strip()
@@ -39,7 +40,8 @@ class BHAgent:
             'execute': ['نفذ', 'execute', 'run', 'شغل'],
             'remember': ['تذكر', 'remember', 'save', 'احفظ'],
             'project': ['مشروع', 'project', 'plan', 'خطط'],
-            'query': ['سؤال', 'ask', 'استفسار']
+            'query': ['سؤال', 'ask', 'استفسار'],
+            'debug': ['اصلح', 'debug', 'fix', 'خطأ']
         }
         text = ' '.join(tokens).lower()
         for intent, keywords in intent_keywords.items():
@@ -278,14 +280,15 @@ agent = BHAgent()
 @app.route('/')
 def home():
     return jsonify({
-        'message': 'Welcome to B.H Agent System',
+        'message': 'B.H Agent System Online',
         'status': 'active',
         'version': '1.0.0',
         'architecture': '30-layer pipeline',
         'endpoints': {
             '/process': 'POST - Process queries',
-            '/': 'GET - Welcome message',
-            '/health': 'GET - System health check'
+            '/': 'GET - Welcome',
+            '/health': 'GET - Health check',
+            '/debug': 'POST - Debug mode'
         }
     })
 
@@ -300,14 +303,21 @@ def process():
         if not query.strip():
             return jsonify({'error': 'Empty query'}), 400
         
+        agent.execution_engine['status'] = 'processing'
+        agent.execution_engine['last_run'] = datetime.now().isoformat()
+        
         response = agent.process_query(query)
+        
+        agent.execution_engine['status'] = 'completed'
         
         return jsonify({
             'status': 'success',
             'response': response,
-            'timestamp': datetime.now().isoformat()
+            'timestamp': datetime.now().isoformat(),
+            'execution': agent.execution_engine
         })
     except Exception as e:
+        agent.execution_engine['status'] = 'error'
         return jsonify({
             'status': 'error',
             'error': str(e)
@@ -319,8 +329,30 @@ def health():
         'status': 'healthy',
         'memory_short_size': len(agent.memory_short),
         'memory_long_size': len(agent.memory_long),
-        'session_log_size': len(agent.session_log)
+        'session_log_size': len(agent.session_log),
+        'execution_engine': agent.execution_engine
     })
+
+@app.route('/debug', methods=['POST'])
+def debug():
+    try:
+        data = request.json
+        command = data.get('command', '')
+        if command == 'reset_memory':
+            agent.memory_short = []
+            agent.memory_long = {}
+            return jsonify({'status': 'memory_reset'})
+        elif command == 'status':
+            return jsonify({
+                'memory_short': len(agent.memory_short),
+                'memory_long': len(agent.memory_long),
+                'session_log': len(agent.session_log),
+                'project_data': agent.project_data
+            })
+        else:
+            return jsonify({'error': 'Unknown debug command'}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
