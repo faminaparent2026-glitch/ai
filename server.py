@@ -1,56 +1,64 @@
-from flask import Flask, render_template_string, request, jsonify
-from datetime import datetime
-
-app = Flask(__name__)
-
-# --- الطبقة المنطقية (دمجنا العقل هنا ليعمل الملف بشكل مستقل) ---
 class BHAgent:
+    def __init__(self):
+        # Layer 8, 9, 10: الذاكرة (Memory)
+        self.short_term_memory = []
+        self.long_term_memory = {} # قاعدة بيانات بسيطة
+
     def process_query(self, query: str) -> dict:
-        q = query.lower()
-        if "مرحبا" in q or "أهلين" in q:
-            return {"response": {"message": "مرحباً، أنا نظام B.H، كيف يمكنني مساعدتك اليوم؟"}}
-        elif "time" in q or "وقت" in q:
-            return {"response": {"message": f"الوقت الحالي هو: {datetime.now().strftime('%H:%M:%S')}"}}
-        else:
-            return {"response": {"message": "لم أفهم الأمر، جرب كلمة 'وقت' أو 'مرحبا'."}}
-
-agent = BHAgent()
-
-# --- واجهة المستخدم ---
-CHAT_UI = """
-<!DOCTYPE html>
-<html lang="ar">
-<body style="background:#121212; color:#fff; font-family:sans-serif; text-align:center;">
-    <h1>B.H Agent Interface</h1>
-    <div id="chat-box" style="border:1px solid #333; width:80%; margin:auto; height:300px; overflow-y:scroll; padding:10px;"></div>
-    <br>
-    <input type="text" id="cmd" placeholder="اكتب أمرك هنا..." style="width:60%; padding:10px;">
-    <button onclick="sendMsg()" style="padding:10px;">إرسال</button>
-    <script>
-        function sendMsg() {
-            let cmd = document.getElementById('cmd').value;
-            fetch('/process?cmd=' + cmd)
-            .then(r => r.json())
-            .then(data => {
-                let box = document.getElementById('chat-box');
-                box.innerHTML += '<p>أنت: ' + cmd + '</p>';
-                box.innerHTML += '<p style="color:cyan;">B.H: ' + data.response.message + '</p>';
-            });
+        # نبدأ بتمرير النص عبر الطبقات واحدة تلو الأخرى
+        context = {
+            "raw": query,
+            "clean": "",
+            "lang": "unknown",
+            "tokens": [],
+            "intent": "none",
+            "entities": [],
+            "context_type": "general",
+            "response": ""
         }
-    </script>
-</body>
-</html>
-"""
 
-@app.route('/')
-def home():
-    return render_template_string(CHAT_UI)
+        # --- تنفيذ الطبقات ---
+        context = self._layer_1_input(context)
+        context = self._layer_2_cleaning(context)
+        context = self._layer_3_lang_detection(context)
+        context = self._layer_4_tokenization(context)
+        context = self._layer_5_intent_understanding(context)
+        context = self._layer_6_entity_extraction(context)
+        context = self._layer_7_context_analysis(context)
+        
+        # الطبقة 29: إعداد الرد (دمج الطبقات السابقة في رد)
+        context["response"] = f"فهمت نيتك ({context['intent']}) في سياق ({context['context_type']})."
+        
+        # حفظ في الذاكرة (Layer 27)
+        self.short_term_memory.append(context)
+        
+        return {"response": {"message": context["response"]}}
 
-@app.route('/process')
-def process():
-    cmd = request.args.get('cmd', '')
-    return jsonify(agent.process_query(cmd))
+    # --- تنفيذ الطبقات ---
+    def _layer_1_input(self, ctx): return ctx
+    
+    def _layer_2_cleaning(self, ctx):
+        ctx["clean"] = "".join(c for c in ctx["raw"] if c.isalnum() or c.isspace()).lower()
+        return ctx
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=10000)
+    def _layer_3_lang_detection(self, ctx):
+        ctx["lang"] = "Arabic" if any('\u0600' <= c <= '\u06FF' for c in ctx["clean"]) else "English"
+        return ctx
+
+    def _layer_4_tokenization(self, ctx):
+        ctx["tokens"] = ctx["clean"].split()
+        return ctx
+
+    def _layer_5_intent_understanding(self, ctx):
+        if "مرحبا" in ctx["clean"]: ctx["intent"] = "greeting"
+        elif "وقت" in ctx["clean"]: ctx["intent"] = "query_time"
+        return ctx
+
+    def _layer_6_entity_extraction(self, ctx):
+        # هنا تستخرج أسماء أو تواريخ
+        return ctx
+
+    def _layer_7_context_analysis(self, ctx):
+        ctx["context_type"] = "conversation"
+        return ctx
 
