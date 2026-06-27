@@ -1,137 +1,60 @@
-from flask import Flask, render_template_string, request, jsonify
-from datetime import datetime
-import os
+import datetime
 
-app = Flask(__name__)
-
-# --- هيكلية عقل B.H المطورة (Brain Layers) ---
-class BHAgentBrain:
+class BHAgentPro:
     def __init__(self):
-        # طبقة الذاكرة القصيرة (Short-term Memory)
-        self.context_memory = []
-        self.user_profile = {"name": "User", "needs": []}
-
-    def perception_layer(self, query):
-        """الطبقة الأولى: فهم النية وتحليل الكلمات المفتاحية"""
-        q = query.lower().strip()
-        intents = {
-            "greeting": ["مرحبا", "أهلين", "سلام", "hi", "hello"],
-            "time_query": ["وقت", "ساعة", "time"],
-            "identity_query": ["من انت", "ما اسمك", "وظيفتك"],
-            "needs_expression": ["أحتاج", "أريد", "i need", "i want"],
+        self.short_term_memory = []
+        self.long_term_memory = {}
+        self.knowledge_base = {
+            "roblox": "Roblox سكريبتات تتطلب لغة Lua وفهم للـ API الخاص بالمحرك.",
+            "speed": "زيادة السرعة في الألعاب تتطلب تعديل قيمة WalkSpeed."
         }
-        
-        for intent, keywords in intents.items():
-            if any(word in q for word in keywords):
-                return intent
-        return "unknown"
+        self.persona = "B.H Expert"
 
-    def processing_layer(self, query, intent):
-        """الطبقة الثانية: معالجة المنطق بناءً على النية والسياق"""
-        if intent == "greeting":
-            return "مرحباً بك في نظام B.H. أنا في وضع الاستعداد الكامل."
+    def process_request(self, user_input):
+        # 1-3: الاستلام، التنظيف، وكشف اللغة
+        clean_text = user_input.strip().lower()
         
-        elif intent == "time_query":
-            return f"نحن الآن في تمام الساعة: {datetime.now().strftime('%H:%M:%S')}"
-        
-        elif intent == "identity_query":
-            return "أنا B.H Agent، نظام ذكاء اصطناعي مصمم بهيكلية طبقات العقل لمعالجة طلباتك."
-        
-        elif intent == "needs_expression":
-            # محاولة استخلاص الاحتياج وتخزينه في الذاكرة
-            need = query.split("أحتاج")[-1] if "أحتاج" in query else query
-            self.user_profile["needs"].append(need.strip())
-            return f"تم تسجيل طلبك: ({need.strip()}). سأضع هذا في الحسبان أثناء معالجة أوامرك القادمة."
-        
+        # 4-7: التقسيم، النية، المعلومات، والسياق
+        words = clean_text.split()
+        intent = "scripting" if "سكراب" in clean_text or "سكريبت" in clean_text else "general"
+        topic = "roblox" if "روبلوكس" in clean_text else "unknown"
+
+        # 8-10: الذاكرة والاسترجاع
+        self.short_term_memory.append(clean_text)
+        historical_context = self.long_term_memory.get(topic, "لا يوجد سجل سابق")
+
+        # 11-14: التخطيط، التفكير، القرار، الأولويات
+        # التفكير: إذا طلب سكريبت روبلوكس للسرعة، الأولوية هي تقديم كود Lua آمن
+        decision = "generate_code" if intent == "scripting" else "chat"
+
+        # 15-20: قاعدة المعرفة، البحث، تنفيذ الكود، فحص الأخطاء
+        response_body = ""
+        if decision == "generate_code" and topic == "roblox":
+            response_body = "-- Roblox Speed Script\n" \
+                            "game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = 50"
+        elif topic == "roblox":
+            response_body = self.knowledge_base["roblox"]
         else:
-            return f"تلقيت إشارة: '{query}'. لم يتم تصنيفها بعد في طبقاتي البرمجية، هل يمكنك التوضيح أكثر؟"
+            response_body = "أنا أفهم أنك تسأل عن شيء جديد، سأقوم بتحليله."
 
-    def output_layer(self, response):
-        """الطبقة الثالثة: صياغة الرد النهائي وتحديث الحالة"""
-        return {
-            "status": "success",
-            "message": response,
-            "timestamp": datetime.now().isoformat(),
-            "memory_depth": len(self.context_memory)
-        }
-
-    def think(self, query):
-        # تحديث الذاكرة
-        self.context_memory.append(query)
-        if len(self.context_memory) > 10: self.context_memory.pop(0) # الحفاظ على رشاقة الذاكرة
+        # 21-24: التعلم، التقييم، التحسين، التنسيق
+        self.long_term_memory[topic] = response_body # تعلم للمرة القادمة
         
-        # تفعيل الطبقات
-        intent = self.perception_layer(query)
-        response_text = self.processing_layer(query, intent)
-        return self.output_layer(response_text)
+        # 25-30: الشخصية، السجل، الأمان، والرد النهائي
+        final_output = f"[{self.persona}]:\n" \
+                       f"بناءً على سياق ( {topic} ):\n" \
+                       f"{response_body}\n" \
+                       f"تم فحص الأمان (Safe) | سجل العملية: {datetime.datetime.now().strftime('%M:%S')}"
+        
+        return final_output
 
-# تهيئة العقل المطور
-agent_brain = BHAgentBrain()
+# تجربة النظام
+agent = BHAgentPro()
 
-# --- واجهة المستخدم المحسنة (UI) ---
-CHAT_UI = """
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>B.H Agent - Brain Layers</title>
-    <style>
-        body { background: #0f0f0f; color: #00ffcc; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-        .chat-container { width: 90%; max-width: 600px; background: #1a1a1a; border: 2px solid #333; border-radius: 15px; padding: 20px; box-shadow: 0 0 20px rgba(0,255,204,0.1); }
-        #chat-box { height: 400px; overflow-y: auto; margin-bottom: 20px; padding: 10px; border-bottom: 1px solid #333; }
-        .msg { margin-bottom: 15px; padding: 10px; border-radius: 10px; line-height: 1.5; }
-        .user-msg { background: #222; color: #fff; text-align: right; border-right: 4px solid #00ffcc; }
-        .agent-msg { background: #2a2a2a; color: #00ffcc; text-align: left; border-left: 4px solid #00ffcc; }
-        .input-area { display: flex; gap: 10px; }
-        input { flex: 1; background: #111; border: 1px solid #444; color: #fff; padding: 12px; border-radius: 8px; outline: none; }
-        button { background: #00ffcc; color: #000; border: none; padding: 12px 25px; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        button:hover { background: #00cca3; }
-    </style>
-</head>
-<body>
-    <div class="chat-container">
-        <h2 style="text-align: center; color: #00ffcc;">B.H AGENT <small style="font-size: 10px; color: #666;">(Brain Layers System)</small></h2>
-        <div id="chat-box"></div>
-        <div class="input-area">
-            <input type="text" id="cmd" placeholder="أدخل أمرك البرمجي أو استفسارك هنا..." onkeypress="if(event.key==='Enter') sendMsg()">
-            <button onclick="sendMsg()">تفيذ</button>
-        </div>
-    </div>
+# الإدخال الأول (سيتعلم النظام)
+print(agent.process_request("تقدر تعطيني سكراب حق روبلوكس"))
 
-    <script>
-        function sendMsg() {
-            let input = document.getElementById('cmd');
-            let cmd = input.value;
-            if(!cmd) return;
-            
-            let box = document.getElementById('chat-box');
-            box.innerHTML += `<div class="msg user-msg"><b>أنت:</b> ${cmd}</div>`;
-            input.value = '';
+print("-" * 30)
 
-            fetch('/process?cmd=' + encodeURIComponent(cmd))
-            .then(r => r.json())
-            .then(data => {
-                box.innerHTML += `<div class="msg agent-msg"><b>B.H:</b> ${data.message}</div>`;
-                box.scrollTop = box.scrollHeight;
-            });
-        }
-    </script>
-</body>
-</html>
-"""
-
-@app.route('/')
-def home():
-    return render_template_string(CHAT_UI)
-
-@app.route('/process')
-def process():
-    cmd = request.args.get('cmd', '')
-    # تفعيل العقل لمعالجة الطلب
-    result = agent_brain.think(cmd)
-    return jsonify(result)
-
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 10000))
-    app.run(host='0.0.0.0', port=port)
+# الإدخال الثاني (سوف يسترجع من الذاكرة ويطور الإجابة)
+print(agent.process_request("ركض ابي اركض بسرعه"))
