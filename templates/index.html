@@ -1,32 +1,46 @@
 <!DOCTYPE html>
-<html lang="ar">
+<html>
 <head>
     <meta charset="UTF-8">
-    <title>B.H Agent Terminal</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>B.H Agent</title>
     <style>
-        body { background: #0d1117; color: #e6edf3; font-family: monospace; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .container { width: 90%; max-width: 600px; background: #161b22; padding: 20px; border-radius: 8px; border: 1px solid #30363d; }
-        .response-area { height: 300px; overflow-y: auto; border: 1px solid #30363d; padding: 10px; margin-bottom: 10px; }
+        body {
+            background: #0d1117;
+            color: #e6edf3;
+            font-family: 'Consolas', monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            text-align: center;
+            border: 1px solid #30363d;
+            padding: 40px;
+            border-radius: 12px;
+            background: #161b22;
+        }
+        h1 {
+            color: #00ff88;
+            font-size: 2.5em;
+        }
+        .status {
+            color: #7d8590;
+            margin-top: 10px;
+            font-size: 1.1em;
+        }
+        .status span {
+            color: #00ff88;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>B.H Agent Interface</h2>
-        <div id="response" class="response-area"></div>
-        <input type="text" id="query" placeholder="Command...">
-        <button onclick="sendMessage()">Send</button>
+        <h1>> B.H. Agent</h1>
+        <div class="status">Status: <span>online</span></div>
+        <div class="status">System ready</div>
     </div>
-    <script>
-        async function sendMessage() {
-            const query = document.getElementById('query').value;
-            const res = await fetch('/process', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({query: query})
-            });
-            const data = await res.json();
-            document.getElementById('response').innerHTML += `<p>> ${data.response}</p>`;
-        }
-    </script>
 </body>
 </html>
