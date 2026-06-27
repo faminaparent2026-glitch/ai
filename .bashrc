@@ -1,1 +1,2 @@
+proot-distro login ubuntu
 
